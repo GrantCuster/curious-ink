@@ -1,0 +1,4 @@
+runtime: nodejs20
+service: curious-ink
+
+default_expiration: "0s"
