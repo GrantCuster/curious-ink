@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const app = express();
 app.use(express.json());
 
+// eslint-disable-next-line no-undef
 const geminiApiKey = process.env["GEMINI_API_KEY"];
 const genAI = new GoogleGenerativeAI(geminiApiKey);
 

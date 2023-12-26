@@ -8,6 +8,7 @@ export const promptAtom = atomWithStorage<string>(
 ["query 1", "query 2", "query 3", "query 4", "query 5", "query 6"]
 \`\`\``
 );
+
 export const prefixAtom = atomWithStorage<string>(
   "prefix",
   "https://google.com/search?q="

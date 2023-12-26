@@ -16,7 +16,6 @@ export const predictImage = async (imageData: string, prompt: string) => {
       }),
     });
     const result = await response.json();
-    console.log(result);
     if (response.ok) {
       return result;
     } else {

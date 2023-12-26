@@ -95,10 +95,10 @@ function Drawing() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const w = 512;
   const h = 512;
-  const pointsRef = useRef<[number, number, number][]>([]);
+  const pointsRef = useRef<[number, number, number][][]>([]);
   const timeoutRef = useRef(-1);
   const [isGenerating, setIsGenerating] = useAtom(isGeneratingAtom);
-  const [response, setResponse] = useAtom(responseAtom);
+  const [, setResponse] = useAtom(responseAtom);
   const [prompt] = useAtom(promptAtom);
 
   function drawPoints() {
@@ -108,10 +108,10 @@ function Drawing() {
       ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "black";
       for (const line of pointsRef.current!) {
-        const outlinePoints = getStroke(line, {
+        const outlinePoints: [number, number, number][] = getStroke(line, {
           size: 4,
           simulatePressure: false,
-        });
+        }) as [number, number, number][]
         const pathData = getSvgPathFromStroke(outlinePoints);
         ctx!.fillStyle = "black";
         const path = new Path2D(pathData);
@@ -120,43 +120,36 @@ function Drawing() {
     }
   }
 
-  useEffect(() => {
-    function resetTimeout() {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        // console.log("send");
-        localStorage.setItem("paths", JSON.stringify(pointsRef.current));
-      }, 1000);
-    }
+  function resetTimeout() {
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      // console.log("send");
+      localStorage.setItem("paths", JSON.stringify(pointsRef.current));
+    }, 1000);
+  }
 
-    function handlePointerDown(e) {
-      e.target.setPointerCapture(e.pointerId);
-      const bounds = canvasRef.current!.getBoundingClientRect();
-      const x = e.clientX - bounds.left;
-      const y = e.clientY - bounds.top;
-      pointsRef.current.push([[x, y, 1]]);
-      drawPoints();
-      resetTimeout();
-    }
+  function handlePointerDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault()
+    const bounds = canvasRef.current!.getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    const y = e.clientY - bounds.top;
+    pointsRef.current.push([[x, y, 1]]);
+    drawPoints();
+    resetTimeout();
+  }
 
-    function handlePointerMove(e) {
-      if (e.buttons !== 1) return;
-      const bounds = canvasRef.current!.getBoundingClientRect();
-      const x = e.clientX - bounds.left;
-      const y = e.clientY - bounds.top;
-      const currentPoints = pointsRef.current[pointsRef.current.length - 1];
-      currentPoints.push([x, y, 1]);
-      drawPoints();
-      resetTimeout();
-    }
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointermove", handlePointerMove);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointermove", handlePointerMove);
-    };
-  }, []);
+  function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
+    if (e.buttons !== 1) return;
+    e.preventDefault()
+    const bounds = canvasRef.current!.getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    const y = e.clientY - bounds.top;
+    const currentPoints = pointsRef.current[pointsRef.current.length - 1];
+    currentPoints.push([x, y, 1]);
+    drawPoints();
+    resetTimeout();
+  }
 
   useEffect(() => {
     const paths = localStorage.getItem("paths");
@@ -174,6 +167,8 @@ function Drawing() {
           ref={canvasRef}
           width={w}
           height={h}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
         />
         <div className="flex justify-between rounded-bl-2xl rounded-br-2xl px-2 py-2 bg-neutral-300 w-[512px] gap-1 items-center">
           <button
@@ -204,6 +199,7 @@ function Drawing() {
                   setResponse(val);
                 } catch (e) {
                   setResponse("");
+                    // @ts-expect-error need to set type
                   alert(e.error);
                 }
                 setIsGenerating(false);
@@ -282,9 +278,12 @@ function PrefixEditor() {
   );
 }
 
-const average = (a, b) => (a + b) / 2;
+const average = (a: number, b: number) => (a + b) / 2;
 
-function getSvgPathFromStroke(points, closed = true) {
+function getSvgPathFromStroke(
+  points: [number, number, number][],
+  closed = true
+) {
   const len = points.length;
 
   if (len < 4) {
